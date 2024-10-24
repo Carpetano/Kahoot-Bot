@@ -14,6 +14,8 @@ In order to 'cheat' in a kahoot you need to know 2 things:
 ## How to set it up
 Create a file called ```Profile.txt``` where you will place the id of the profile you want to scrap all ids for later use
 
+# WIP, will upload eventually
+
 > ## PrintKahootData.py
 > Script to Print the questions and answers of a kahoot by it's ID
 
