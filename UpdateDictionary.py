@@ -2,8 +2,21 @@ from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
+from selenium.common.exceptions import StaleElementReferenceException
 import time
 import requests
+import unicodedata
+
+
+def normalize_text(text):
+    # Normalize to NFD (decomposing characters with accents)
+    text = unicodedata.normalize('NFD', text)
+    
+    # Remove combining characters (accents, tildes)
+    text = ''.join(char for char in text if not unicodedata.combining(char))
+    
+    # Lowercase and strip whitespace
+    return text.strip().lower()
 
 
 def get_answers_dictionary(id):
@@ -48,7 +61,7 @@ def get_answers_dictionary(id):
     return question_answers
 
 
-def get_kahoot_urls(profile_url, timeout=30, class_name='kahoots-grid__KahootGrid-sc-x6x3n7-1'):
+def get_kahoot_urls(profile_url, timeout=30, class_name='kahoots-grid__KahootGrid-sc-x6x3n7-1', load_button_class_name='button__Button-sc-c6mvr2-0'):
     """Get the latest public kahoot urls from a kahoot profile"""
 
     # List where the urls will be stored
@@ -105,12 +118,20 @@ def urls_to_uuids(urls):
     return uuids
 
 
-def get_latest_kahoots_dictionary(uuids):
+def get_latest_kahoots_dictionary(uuids, delay_between_requests=0.5):
     # Store ALL of the questions and answers
     questions = {}
 
+    print(f"\nNumber of Kahoots: {len(uuids)}")
+
     # Iterate through each uuid
-    for uuid in uuids:
+    for index, uuid in enumerate(uuids):
+
+        time.sleep(delay_between_requests)
+
+        print(f"Requesting {uuid}")
+        print(f"Remaining: {len(uuids) - index}")
+
         # Get the dictionary of the kahoot's uuid
         temp_dictionary = get_answers_dictionary(uuid)
 
@@ -138,11 +159,21 @@ def get_latest_kahoots_answers_from_profile(profile_url):
 
 
 def remove_unwanted_tags(text):
-    return text.replace('<b>', '').replace('</b>', '').replace('<i>', '').replace('</i>', '')
+    return text.replace('&nbsp;', ' ').replace('&lt', ' ').replace('&gt', ' ').replace('<b>', '').replace('</b>', '').replace('<i>', '').replace('</i>', '').replace('  ', ' ').replace('   ', ' ').replace('     '. ' ')
     
 
 
-all_questions = get_latest_kahoots_answers_from_profile('your profile url here')
+with open('Profile.txt', 'r', encoding='UTF-8') as f:
+    profile_url = f.read().strip()
+
+if not profile_url:
+    print('No profile found in "Profile.txt"')
+    
+print(f"Scanning: {profile_url}")
+
+
+all_questions = get_latest_kahoots_answers_from_profile(profile_url)
+
 
 with open('LatestKahootsQuestions.txt', 'w', encoding='UTF-8') as f:
 
@@ -150,8 +181,10 @@ with open('LatestKahootsQuestions.txt', 'w', encoding='UTF-8') as f:
 
     for q, a in all_questions.items():
 
-        line = f"{remove_unwanted_tags(q)} -|@|- {remove_unwanted_tags(a)}\n"
+        line = f"{remove_unwanted_tags(q)} -|@|- {remove_unwanted_tags(a)}"
 
-        f.write(line)
+        line = normalize_text(line)
+
+        f.write(f"{line}\n")
 
 print('Done')

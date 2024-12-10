@@ -9,6 +9,12 @@ import time
 
 import requests
 
+
+def remove_unwanted_tags(text):
+    return text.replace('&nbsp;', ' ').replace('&lt', ' ').replace('&gt', ' ').replace('<b>', '').replace('</b>', '').replace('<i>', '').replace('</i>', '').replace('  ', ' ').replace('   ', ' ').replace('     ', ' ')
+ 
+
+
 def normalize_text(text):
     # Normalize to NFD (decomposing characters with accents)
     text = unicodedata.normalize('NFD', text)
@@ -60,7 +66,6 @@ def get_answers_dictionary(id):
         return None
 
     return question_answers
-
 
 
 def get_answers_from_local_dictionary():
@@ -135,6 +140,10 @@ while True:
     if question is not None:
 
         try:
+
+            question = normalize_text(question)
+
+            question = remove_unwanted_tags(question)
 
             # Store the expected answer to look for
             expected_answer = my_dictionary[question]
